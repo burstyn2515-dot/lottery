@@ -1,0 +1,4 @@
+body { font-family: Arial; max-width: 900px; margin: auto; }
+button { margin: 5px; padding: 8px 12px; cursor: pointer; }
+.game { border: 1px solid #ccc; padding: 10px; margin-bottom: 15px; }
+.admin { background-color: #f4f4f4; padding: 10px; margin-top: 20px; }
