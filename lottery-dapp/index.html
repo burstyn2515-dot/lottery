@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lottery DApp - 4 Games</title>
+<script src="https://cdn.jsdelivr.net/npm/@multiversx/sdk-dapp@1.13.0/dist/sdk-dapp.min.js"></script>
+<style>
+body { font-family: sans-serif; max-width: 900px; margin: auto; }
+button { margin: 5px; padding: 10px; cursor: pointer; }
+.game { border: 1px solid #ccc; padding: 10px; margin-bottom: 15px; }
+.admin { background-color: #f9f9f9; padding: 10px; margin-top: 20px; }
+#walletStatus { margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<h1>Lottery DApp - 4 Games</h1>
+
+<div id="walletStatus">Wallet: Not connected</div>
+<button id="connectWalletBtn">Connect Wallet</button>
+<div id="userBalance">Balance: 0 EGLD</div>
+
+<div id="gamesContainer"></div>
+
+<div class="admin" id="adminPanel" style="display:none;">
+<h2>Admin Panel</h2>
+<div id="adminGames"></div>
+</div>
+
+<script>
+const devnetProxy = "https://devnet-gateway.multiversx.com";
+const adminAddress = "erd1jtqzyqz66wxh8cdjj8waqf9vy0j9r2qa2p44xquyx5ez3sqe73hq9zu5m5";
+
+const games = [
+  {name: "Game1", contract: "erd1qqqqqqqqqqqqqpgqpm80wmucecggh4dwssnw2w6m34qmv5nh73hq325n24"},
+  {name: "Game2", contract: "erd1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},
+  {name: "Game3", contract: "erd1yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"},
+  {name: "Game4", contract: "erd1zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"}
+];
+
+let userAddress = null;
+let autoUpdateInterval = null;
+
+// ================= WALLET =================
+document.getElementById("connectWalletBtn").onclick = connectWallet;
+
+async function connectWallet() {
+    if (!window.multiversx) {
+        alert("MultiversX wallet not found! Please install Maiar / MultiversX Web Wallet.");
+        return;
+    }
+
+    try {
+        await window.multiversx.connect();
+        userAddress = window.multiversx.getAddress();
+        if(!userAddress) throw "No address returned";
+
+        document.getElementById("walletStatus").innerText = "Wallet: " + userAddress;
+        document.getElementById("connectWalletBtn").style.display = "none";
+
+        await updateUserBalance();
+        await renderGames();
+
+        if(userAddress === adminAddress) {
+            document.getElementById("adminPanel").style.display = "block";
+            renderAdminGames();
+        }
+
+        if(!autoUpdateInterval) {
+            autoUpdateInterval = setInterval(autoUpdate, 5000);
+        }
+
+    } catch(e) {
+        console.error("Wallet connection error:", e);
+        alert("Failed to connect wallet. Make sure your wallet is unlocked.");
+    }
+}
+
+// ================= AUTO UPDATE =================
+async function autoUpdate() {
+    await updateUserBalance();
+    for(let game of games) {
+        await updateGameInfo(game);
+        if(userAddress === adminAddress) await updateAdminGameInfo(game);
+    }
+}
+
+// ================= USER BALANCE =================
+async function updateUserBalance() {
+    if(!userAddress) return;
+    try {
+        const res = await fetch(`${devnetProxy}/address/${userAddress}`);
+        const data = await res.json();
+        document.getElementById("userBalance").innerText =
+            "Balance: " + (parseInt(data.account.balance) / 1e18).toFixed(3) + " EGLD";
+    } catch(err) {
+        console.error("Failed to fetch balance", err);
+    }
+}
+
+// ================= GAMES =================
+function createGameDiv(game) {
+    const div = document.createElement("div");
+    div.className = "game";
+    div.innerHTML = `
+        <h2>${game.name}</h2>
+        <div>Players: <span id="${game.name}_players">0</span></div>
+        <div>Your tickets: <span id="${game.name}_yourTickets">0</span></div>
+        <div>Ticket price: <span id="${game.name}_price">1.0</span> EGLD</div>
+        <button id="${game.name}_buy">Buy Ticket</button>
+    `;
+    return div;
+}
+
+async function renderGames() {
+    const container = document.getElementById("gamesContainer");
+    container.innerHTML = "";
+
+    for(let game of games) {
+        const div = createGameDiv(game);
+        container.appendChild(div);
+        await updateGameInfo(game);
+
+        document.getElementById(`${game.name}_buy`).onclick = async () => {
+            const price = parseFloat(document.getElementById(`${game.name}_price`).innerText);
+            await window.multiversx.sendTransaction({
+                receiver: game.contract,
+                value: price * 1e18,
+                data: "enter",
+                gasLimit: 5000000
+            });
+            await updateUserBalance();
+            await updateGameInfo(game);
+            if(userAddress === adminAddress) await updateAdminGameInfo(game);
+        };
+    }
+}
+
+async function updateGameInfo(game) {
+    try {
+        const res = await fetch(`${devnetProxy}/vm-values/query?contract=${game.contract}&func=players`);
+        const data = await res.json();
+        const players = data.returnData || [];
+
+        document.getElementById(`${game.name}_players`).innerText = players.length;
+        const yourTickets = players.filter(p => p === userAddress).length;
+        document.getElementById(`${game.name}_yourTickets`).innerText = yourTickets;
+
+        const price = 1 + 0.1 * players.length;
+        document.getElementById(`${game.name}_price`).innerText = price.toFixed(1);
+    } catch(err) {
+        console.error("Failed to fetch game info", err);
+    }
+}
+
+// ================= ADMIN =================
+function renderAdminGames() {
+    const container = document.getElementById("adminGames");
+    container.innerHTML = "";
+
+    for(let game of games) {
+        const div = document.createElement("div");
+        div.className = "game";
+        div.innerHTML = `
+            <h3>${game.name}</h3>
+            <div>Contract balance: <span id="${game.name}_balance">0</span> EGLD</div>
+            <div>Players:</div>
+            <ul id="${game.name}_list"></ul>
+            <button id="${game.name}_pick">Pick Winner</button>
+        `;
+        container.appendChild(div);
+
+        updateAdminGameInfo(game);
+
+        document.getElementById(`${game.name}_pick`).onclick = async () => {
+            await window.multiversx.sendTransaction({
+                receiver: game.contract,
+                value: 0,
+                data: "pick_winner",
+                gasLimit: 5000000
+            });
+            await updateAdminGameInfo(game);
+        };
+    }
+}
+
+async function updateAdminGameInfo(game) {
+    try {
+        const res = await fetch(`${devnetProxy}/address/${game.contract}`);
+        const data = await res.json();
+        document.getElementById(`${game.name}_balance`).innerText =
+            (parseInt(data.account.balance) / 1e18).toFixed(3);
+
+        const playersRes = await fetch(`${devnetProxy}/vm-values/query?contract=${game.contract}&func=players`);
+        const playersData = await playersRes.json();
+        const players = playersData.returnData || [];
+
+        const playerList = document.getElementById(`${game.name}_list`);
+        playerList.innerHTML = "";
+        players.forEach(p => {
+            const li = document.createElement("li");
+            li.innerText = p;
+            playerList.appendChild(li);
+        });
+    } catch(err) {
+        console.error("Failed to fetch admin info", err);
+    }
+}
+</script>
+
+</body>
+</html>
