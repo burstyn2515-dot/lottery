@@ -1,10 +1,10 @@
 const devnetProxy = "https://devnet-gateway.multiversx.com";
 
 const games = [
-  {name: "Game1"},
-  {name: "Game2"},
-  {name: "Game3"},
-  {name: "Game4"}
+  { name: "Game1" },
+  { name: "Game2" },
+  { name: "Game3" },
+  { name: "Game4" }
 ];
 
 let userAddress = null;
@@ -13,35 +13,37 @@ document.getElementById("connectWalletBtn").onclick = connectWallet;
 
 async function connectWallet() {
 
-    // Проверяем есть ли кошелек
-    if (!window.multiversx) {
-        alert("MultiversX wallet not found! Use HTTPS or GitHub Pages.");
-        return;
-    }
-
     try {
-        await window.multiversx.connect();
-        userAddress = window.multiversx.getAddress();
 
-        if (!userAddress) {
-            alert("Wallet connected but address not found.");
+        if (!window.mxSdkDapp) {
+            alert("MultiversX SDK not loaded!");
             return;
         }
 
-        document.getElementById("walletStatus").innerText = "Wallet: " + userAddress;
+        await window.mxSdkDapp.init();
+
+        const loginResponse = await window.mxSdkDapp.login();
+
+        userAddress = loginResponse.address;
+
+        document.getElementById("walletStatus").innerText =
+            "Wallet: " + userAddress;
+
         document.getElementById("connectWalletBtn").style.display = "none";
 
         renderGames();
         updateBalance();
 
     } catch (error) {
-        console.error(error);
+        console.error("Connection error:", error);
         alert("Failed to connect wallet.");
     }
 }
 
 async function updateBalance() {
+
     try {
+
         const res = await fetch(`${devnetProxy}/address/${userAddress}`);
         const data = await res.json();
 
