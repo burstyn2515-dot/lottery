@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@multiversx/sdk-dapp": "^5.6.19"
+  }
+}
