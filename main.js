@@ -12,19 +12,26 @@ let userAddress = null;
 document.getElementById("connectWalletBtn").onclick = connectWallet;
 
 async function connectWallet() {
-
     try {
 
+        // Проверяем загрузился ли SDK
         if (!window.mxSdkDapp) {
             alert("MultiversX SDK not loaded!");
             return;
         }
 
+        // Инициализация SDK
         await window.mxSdkDapp.init();
 
+        // Логин через расширение
         const loginResponse = await window.mxSdkDapp.login();
 
         userAddress = loginResponse.address;
+
+        if (!userAddress) {
+            alert("Address not found.");
+            return;
+        }
 
         document.getElementById("walletStatus").innerText =
             "Wallet: " + userAddress;
@@ -41,7 +48,6 @@ async function connectWallet() {
 }
 
 async function updateBalance() {
-
     try {
 
         const res = await fetch(`${devnetProxy}/address/${userAddress}`);
@@ -53,7 +59,7 @@ async function updateBalance() {
             "Balance: " + balance.toFixed(3) + " EGLD";
 
     } catch (error) {
-        console.log("Balance fetch error");
+        console.log("Balance fetch error", error);
     }
 }
 
