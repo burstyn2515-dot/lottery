@@ -13,7 +13,7 @@ document.getElementById("connectWalletBtn").onclick = connectWallet;
 
 async function connectWallet() {
     try {
-        // Проверяем, есть ли расширение
+        // Проверяем наличие кошелька
         if (!window.elrondWallet) {
             alert("MultiversX Wallet extension not found!");
             return;
@@ -41,7 +41,7 @@ async function connectWallet() {
 
     } catch (error) {
         console.error("Connection error:", error);
-        alert("Failed to connect wallet. Make sure it is unlocked and allowed for this site.");
+        alert("Failed to connect wallet. Make sure it is unlocked and the site is opened via HTTPS.");
     }
 }
 
