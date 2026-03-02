@@ -12,17 +12,25 @@ let userAddress = null;
 document.getElementById("connectWalletBtn").onclick = connectWallet;
 
 async function connectWallet() {
-
     try {
-
+        // Проверяем, есть ли расширение
         if (!window.elrondWallet) {
-            alert("MultiversX wallet extension not found!");
+            alert("MultiversX Wallet extension not found!");
             return;
         }
 
+        // Запрашиваем подключение к сайту
         await window.elrondWallet.requestLogin();
+
+        // Получаем адрес пользователя
         userAddress = await window.elrondWallet.getAddress();
 
+        if (!userAddress) {
+            alert("Wallet connected, but address not found. Make sure it is unlocked.");
+            return;
+        }
+
+        // Обновляем статус на странице
         document.getElementById("walletStatus").innerText =
             "Wallet: " + userAddress;
 
@@ -33,17 +41,14 @@ async function connectWallet() {
 
     } catch (error) {
         console.error("Connection error:", error);
-        alert("Failed to connect wallet.");
+        alert("Failed to connect wallet. Make sure it is unlocked and allowed for this site.");
     }
 }
 
 async function updateBalance() {
-
     try {
-
         const res = await fetch(`${devnetProxy}/address/${userAddress}`);
         const data = await res.json();
-
         const balance = parseInt(data.account.balance) / 1e18;
 
         document.getElementById("userBalance").innerText =
@@ -55,12 +60,10 @@ async function updateBalance() {
 }
 
 function renderGames() {
-
     const container = document.getElementById("gamesContainer");
     container.innerHTML = "";
 
     games.forEach(game => {
-
         const div = document.createElement("div");
         div.className = "game";
 
