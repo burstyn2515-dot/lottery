@@ -4,30 +4,35 @@ const balanceDiv = document.getElementById("userBalance");
 
 connectBtn.addEventListener("click", connectWallet);
 
-
-
 async function connectWallet() {
+
+    if (typeof window.ethereum === "undefined") {
+        alert("MetaMask not installed!");
+        return;
+    }
+
     try {
-
-        // Проверяем установлен ли MultiversX DeFi Wallet
-        if (!window.multiversx) {
-            alert("MultiversXxxx DeFi Wallet not installed!");
-            return;
-        }
-
-        // Запрашиваем доступ к аккаунтам
-        const accounts = await window.multiversx.request({
-            method: "connect"
+        // Запрос подключения
+        const accounts = await window.ethereum.request({
+            method: "eth_requestAccounts"
         });
 
-        console.log("Connected accounts:", accounts);
+        const account = accounts[0];
+        walletStatus.innerText = "Wallet: " + account;
 
-        if (accounts && accounts.length > 0) {
-            document.getElementById("walletStatus").innerText =
-                "Wallet connected: " + accounts[0];
-        }
+        // Получаем баланс
+        const balanceWei = await window.ethereum.request({
+            method: "eth_getBalance",
+            params: [account, "latest"]
+        });
+
+        const balanceEth = parseInt(balanceWei, 16) / 1e18;
+
+        balanceDiv.innerText = "Balance: " + balanceEth.toFixed(4) + " ETH";
+
+        console.log("Connected:", account);
 
     } catch (error) {
-        console.error("Connection error:", error);
+        console.error(error);
     }
 }
