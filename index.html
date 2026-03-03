@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>Lottery DApp - 4 Games</title>
-<link rel="stylesheet" href="style.css">
 </head>
 
 <body>
@@ -11,14 +10,35 @@
 <h1>Lottery DApp - 4 Games</h1>
 
 <div id="walletStatus">Wallet: Not connected</div>
-<button id="connectWalletBtn">Connect Wallet</button>
-<div id="userBalance">Balance: 0 EGLD</div>
-<hr> 
+<button onclick="connectWallet()">Connect Wallet</button>
 
-<div id="gamesContainer"></div>
+<script>
+async function connectWallet() {
+    try {
 
-<!-- Подключаем основной JS -->
-<script src="main.js"></script>
+        // Проверяем установлен ли MultiversX DeFi Wallet
+        if (!window.multiversx) {
+            alert("MultiversX DeFi Wallet not installed!");
+            return;
+        }
+
+        // Запрашиваем доступ к аккаунтам
+        const accounts = await window.multiversx.request({
+            method: "connect"
+        });
+
+        console.log("Connected accounts:", accounts);
+
+        if (accounts && accounts.length > 0) {
+            document.getElementById("walletStatus").innerText =
+                "Wallet connected: " + accounts[0];
+        }
+
+    } catch (error) {
+        console.error("Connection error:", error);
+    }
+}
+</script>
 
 </body>
 </html>
