@@ -1,79 +1,33 @@
-const devnetProxy = "https://devnet-gateway.multiversx.com";
+const connectBtn = document.getElementById("connectWalletBtn");
+const walletStatus = document.getElementById("walletStatus");
+const balanceDiv = document.getElementById("userBalance");
 
-const games = [
-  { name: "Game1" },
-  { name: "Game2" },
-  { name: "Game3" },
-  { name: "Game4" }
-];
+connectBtn.addEventListener("click", connectWallet);
 
-let userAddress = null;
 
-document.getElementById("connectWalletBtn").onclick = connectWallet;
 
 async function connectWallet() {
     try {
-        // Проверяем наличие кошелька
-        if (!window.elrondWallet) {
-            alert("MultiversX Wallet extension not found!");
+
+        // Проверяем установлен ли MultiversX DeFi Wallet
+        if (!window.multiversx) {
+            alert("MultiversXxxx DeFi Wallet not installed!");
             return;
         }
 
-        // Запрашиваем подключение к сайту
-        await window.elrondWallet.requestLogin();
+        // Запрашиваем доступ к аккаунтам
+        const accounts = await window.multiversx.request({
+            method: "connect"
+        });
 
-        // Получаем адрес пользователя
-        userAddress = await window.elrondWallet.getAddress();
+        console.log("Connected accounts:", accounts);
 
-        if (!userAddress) {
-            alert("Wallet connected, but address not found. Make sure it is unlocked.");
-            return;
+        if (accounts && accounts.length > 0) {
+            document.getElementById("walletStatus").innerText =
+                "Wallet connected: " + accounts[0];
         }
-
-        // Обновляем статус на странице
-        document.getElementById("walletStatus").innerText =
-            "Wallet: " + userAddress;
-
-        document.getElementById("connectWalletBtn").style.display = "none";
-
-        renderGames();
-        updateBalance();
 
     } catch (error) {
         console.error("Connection error:", error);
-        alert("Failed to connect wallet. Make sure it is unlocked and the site is opened via HTTPS.");
     }
-}
-
-async function updateBalance() {
-    try {
-        const res = await fetch(`${devnetProxy}/address/${userAddress}`);
-        const data = await res.json();
-        const balance = parseInt(data.account.balance) / 1e18;
-
-        document.getElementById("userBalance").innerText =
-            "Balance: " + balance.toFixed(3) + " EGLD";
-
-    } catch (error) {
-        console.log("Balance fetch error", error);
-    }
-}
-
-function renderGames() {
-    const container = document.getElementById("gamesContainer");
-    container.innerHTML = "";
-
-    games.forEach(game => {
-        const div = document.createElement("div");
-        div.className = "game";
-
-        div.innerHTML = `
-            <h2>${game.name}</h2>
-            <p>Players: 0</p>
-            <p>Your tickets: 0</p>
-            <button>Buy Ticket</button>
-        `;
-
-        container.appendChild(div);
-    });
 }
