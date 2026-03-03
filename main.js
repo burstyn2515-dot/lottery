@@ -12,7 +12,6 @@ async function connectWallet() {
     }
 
     try {
-        // Запрос подключения
         const accounts = await window.ethereum.request({
             method: "eth_requestAccounts"
         });
@@ -20,7 +19,6 @@ async function connectWallet() {
         const account = accounts[0];
         walletStatus.innerText = "Wallet: " + account;
 
-        // Получаем баланс
         const balanceWei = await window.ethereum.request({
             method: "eth_getBalance",
             params: [account, "latest"]
@@ -28,11 +26,12 @@ async function connectWallet() {
 
         const balanceEth = parseInt(balanceWei, 16) / 1e18;
 
-        balanceDiv.innerText = "Balance: " + balanceEth.toFixed(4) + " ETH";
+        balanceDiv.innerText =
+            "Balance: " + balanceEth.toFixed(4) + " MATIC";
 
         console.log("Connected:", account);
 
     } catch (error) {
-        console.error(error);
+        console.error("Connection error:", error);
     }
 }
